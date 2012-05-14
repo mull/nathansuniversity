@@ -1,0 +1,45 @@
+var compile = function(musexpr) {
+  notes = [];
+  startTime = {timer:0};
+  compileToNOTE(notes, startTime, false, musexpr);
+
+  return notes;
+};
+
+var compileToNOTE = function(notes, startTime, isPar, musexpr) {
+  if (musexpr.tag === "note") {
+    musexpr.start = startTime.timer;
+    if (!isPar) {
+      startTime.timer += musexpr.dur;
+    }
+    notes.push(musexpr);
+  } else if (musexpr.tag === "seq") {
+    compileToNOTE(notes, startTime, false, musexpr.left);
+    compileToNOTE(notes, startTime, false, musexpr.right);
+  } else if (musexpr.tag === "par") {
+    compileToNOTE(notes, startTime, true, musexpr.left);
+    compileToNOTE(notes, startTime, false, musexpr.right);
+  } else if (musexpr.tag === "rest") {
+    startTime.timer += musexpr.dur;
+  } else if (musexpr.tag === "repeat") {
+    for (var i=0; i < musexpr.count; i++) {
+      // Copy the object so we don't pass it by reference
+      var newObject = {
+        tag: musexpr.section.tag,
+        pitch: musexpr.section.pitch,
+        dur: musexpr.section.dur
+      };
+      compileToNOTE(notes, startTime, false, newObject);
+    }
+  }
+
+  return notes;
+};
+
+var seq = {
+  tag: "repeat",
+  section: { tag: 'note', pitch: 'c4', dur: 250 },
+  count: 3
+}
+
+console.log( compile(seq) );
